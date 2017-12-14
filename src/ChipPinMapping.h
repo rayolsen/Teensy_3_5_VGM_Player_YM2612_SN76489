@@ -30,3 +30,4 @@ byte SN_DATA[8] = {24, 25, 26, 27, 28, 29, 30, 31};
 //Serial2
 //#define BT_RX 9
 //#define BT_TX 10
+//#define PIN_D13 13 //LED

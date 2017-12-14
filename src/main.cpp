@@ -2,10 +2,10 @@
 #include <SPI.h>
 #include <SdFat.h>
 #include <Wire.h>
-//#include <U8g2lib.h>
+#include <U8g2lib.h>
 
 //OLED
-//U8G2_SH1106_128X64_NONAME_F_SW_I2C u8g2(U8G2_R0, 19, 18, U8X8_PIN_NONE);
+U8G2_SH1106_128X64_NONAME_F_SW_I2C u8g2(U8G2_R0, 19, 18, U8X8_PIN_NONE);
 
 //File Stream
 SdFatSdio SD;
@@ -36,10 +36,11 @@ unsigned long startTime = 0;
 uint8_t pcmBuffer[MAX_PCM_BUFFER_SIZE];
 uint32_t pcmBufferPosition = 0;
 uint8_t cmd;
+uint8_t cmdFromBeforePause;
 uint32_t loopOffset = 0;
 uint16_t loopCount = 0;
 uint16_t nextSongAfterXLoops = 3;
-enum PlayMode {LOOP, PAUSE, SHUFFLE, IN_ORDER};
+enum PlayMode {LOOP, PAUSE, SHUFFLE, IN_ORDER, PAUSED};
 PlayMode playMode = SHUFFLE;
 PlayMode playModeBeforePause = SHUFFLE;
 
@@ -48,6 +49,10 @@ String trackTitle;
 String gameName;
 String systemName;
 String gameDate;
+
+//Pause check
+bool DidWeJustUnpause = false;
+bool IsPauseButtonHeld = false;
 
 void SetClock(uint16_t oct, uint16_t dac, unsigned char target)
 {
@@ -103,7 +108,7 @@ void ClearBuffers()
 {
   pcmBufferPosition = 0;
   bufferPos = 0;
-  for(unsigned int i = 0; i < MAX_CMD_BUFFER; i++)
+  for(int i = 0; i < MAX_CMD_BUFFER; i++)
     cmdBuffer[i] = 0;
   for(int i = 0; i < MAX_PCM_BUFFER_SIZE; i++)
     pcmBuffer[i] = 0;
@@ -111,7 +116,7 @@ void ClearBuffers()
 
 void ClearTrackData()
 {
-  for(unsigned int i = 0; i < MAX_FILE_NAME_SIZE; i++)
+  for(int i = 0; i < MAX_FILE_NAME_SIZE; i++)
     fileName[i] = 0;
   trackTitle = "";
   gameName = "";
@@ -180,7 +185,7 @@ void GetHeaderData() //Scrape off the important VGM data from the header, then d
   // Serial.print("DATA LENGTH: ");
   // Serial.println(dataLength);
 
-  for(unsigned int i = 0; i<dataLength; i++) //Convert 16-bit characters to 8 bit chars. This may cause issues with non ASCII characters. (IE Japanese chars.)
+  for(int i = 0; i<dataLength; i++) //Convert 16-bit characters to 8 bit chars. This may cause issues with non ASCII characters. (IE Japanese chars.)
   {
     char c1 = vgm.read();
     char c2 = vgm.read();
@@ -247,7 +252,7 @@ void GetHeaderData() //Scrape off the important VGM data from the header, then d
   }
   else
   {
-    for(unsigned int i = 0; i < vgmDataOffset; i++) GetByte();  //VGM starts at different data position (Probably VGM spec 1.7+)
+    for(int i = 0; i < vgmDataOffset; i++) GetByte();  //VGM starts at different data position (Probably VGM spec 1.7+)
   }
 }
 
@@ -267,7 +272,7 @@ void RemoveSVI() //Sometimes, Windows likes to place invisible files in our SD c
   nextFile.close();
 }
 
-/*void DrawOledPage()
+void DrawOledPage()
 {
   u8g2.clearDisplay();
   u8g2.setFont(u8g2_font_helvR08_te);
@@ -298,7 +303,7 @@ void RemoveSVI() //Sometimes, Windows likes to place invisible files in our SD c
   cstr = &loopShuffleStatus[0u];
   u8g2.drawStr(0, 60, cstr);
   u8g2.sendBuffer();
-}*/
+}
 
 enum StartUpProfile {FIRST_START, NEXT, PREVIOUS, RNG, REQUEST};
 void StartupSequence(StartUpProfile sup, String request = "")
@@ -446,7 +451,7 @@ void StartupSequence(StartUpProfile sup, String request = "")
 
     SilenceAllChannels();
     digitalWrite(SN_WE, HIGH);
-    //DrawOledPage();
+    DrawOledPage();
     delay(500);
 }
 
@@ -459,7 +464,7 @@ void setup()
   // pinMode(YM_CLOCK_CS, OUTPUT);
   // digitalWrite(YM_CLOCK_CS, HIGH);
   //SetClock(12, 912, YM_CLOCK_CS); //7.67 MHz
-
+  //pinMode(PIN_D13, OUTPUT);
   //Setup Data pins
   for(int i = 0; i<8; i++)
   {
@@ -502,23 +507,24 @@ void setup()
   //pinMode(BT_RX, INPUT);
   //pinMode(BT_TX, OUTPUT);
   //Serial2.begin(9600); //Hardware UART port 2
-/*
+
   u8g2.begin();
   u8g2.firstPage();
   u8g2.setFont(u8g2_font_helvB08_tr);
-  u8g2.drawStr(30,10,"Aidan Lawrence");
+  u8g2.drawStr(30,10,"Rad Grandmas");
   u8g2.drawStr(50,20,"2017");
   u8g2.drawStr(30,50,"Sega Genesis");
   u8g2.drawStr(10,60,"Hardware VGM Player");
   u8g2.sendBuffer();
   delay(1500);
   u8g2.clearDisplay();
-  u8g2.sendBuffer();*/
+  u8g2.sendBuffer();
   StartupSequence(FIRST_START);
 }
 
 void loop()
 {
+  //digitalWrite(PIN_D13, LOW);
   while(Serial.available() || Serial2.available())
   {
     bool USBorBluetooh = Serial.available();
@@ -537,20 +543,20 @@ void loop()
       case '/': //Toggle shuffle mode
         playMode == SHUFFLE ? playMode = IN_ORDER : playMode = SHUFFLE;
         playMode == SHUFFLE ? Serial.println("SHUFFLE ON") : Serial.println("SHUFFLE OFF");
-        //DrawOledPage();
+        DrawOledPage();
       break;
       case '.': //Toggle loop mode
         playMode == LOOP ? playMode = IN_ORDER : playMode = LOOP;
         playMode == LOOP ? Serial.println("LOOP ON") : Serial.println("LOOP OFF");
-        //DrawOledPage();
+        DrawOledPage();
       break;
-      /*case 'p'://Pause-Unpause
-      //  playMode == PAUSE ? playMode = PAUSE : playMode = playModeBeforePause;
-      //  playMode == PAUSE ? Serial.println("PAUSE START") : Serial.println("PAUSE END");
-        if (playMode != PAUSE)
+      case 'p': //Pause/Unpause
+        if (playMode != PAUSED)
         {
           playModeBeforePause = playMode;
-          playMode = PAUSE;
+          playMode = PAUSED;
+          cmdFromBeforePause = GetByte();
+          SilenceAllChannels();
           Serial.println("PAUSE START");
         }
         else
@@ -558,7 +564,7 @@ void loop()
           playMode = playModeBeforePause;
           Serial.println("PAUSE END");
         }
-      break;*/
+      break;
       case 'r': //Song Request, format:  r:mySongFileName.vgm - An attempt will be made to find and open that file.
         String req = USBorBluetooh ? Serial.readString(1024) : Serial2.readString(1024);
         req.remove(0, 1); //Remove colon character
@@ -575,18 +581,31 @@ void loop()
     StartupSequence(RNG);
   if(!digitalRead(PSE_BTN))
   {
-    if (playMode != PAUSE)
+    if (IsPauseButtonHeld)
+      return;
+    IsPauseButtonHeld = true;
+    if (playMode != PAUSED)
     {
       playModeBeforePause = playMode;
-      playMode = PAUSE;
-      //Serial.println("PAUSE START");
+      playMode = PAUSED;
+      cmdFromBeforePause = GetByte();
+      SilenceAllChannels();
+      Serial.println("PAUSE START");
     }
     else
     {
       playMode = playModeBeforePause;
-      //Serial.println("PAUSE END");
+      DidWeJustUnpause = true;
+      Serial.println("PAUSE END");
     }
   }
+  else
+  {
+    IsPauseButtonHeld = false;
+  }
+
+  if (playMode == PAUSED)
+    return;
 
 
   if(loopCount >= nextSongAfterXLoops)
@@ -603,7 +622,16 @@ void loop()
   {
     return;
   }
-  cmd = GetByte();
+  if (DidWeJustUnpause)
+  {
+    Serial.println("ANYTHING");
+    cmd = cmdFromBeforePause;
+    DidWeJustUnpause = false;
+  }
+  else
+  {
+    cmd = GetByte();
+  }
   switch(cmd) //Use this switch statement to parse VGM commands
     {
       case 0x50:
@@ -708,13 +736,13 @@ void loop()
         GetByte(); //Skip 0x66 and data type
         pcmBufferPosition = bufferPos;
         uint32_t PCMdataSize = 0;
-        for (unsigned int i = 0; i < 4; i++ )
+        for ( int i = 0; i < 4; i++ )
         {
           PCMdataSize += ( uint32_t( GetByte() ) << ( 8 * i ));
         }
         //Serial.println(PCMdataSize);
 
-        for (unsigned int i = 0; i < PCMdataSize; i++ )
+        for ( int i = 0; i < PCMdataSize; i++ )
         {
            if(PCMdataSize <= MAX_PCM_BUFFER_SIZE)
               pcmBuffer[ i ] = (uint8_t)GetByte();
@@ -815,4 +843,5 @@ void loop()
       default:
       break;
     }
+  //digitalWrite(PIN_D13, HIGH);
 }
