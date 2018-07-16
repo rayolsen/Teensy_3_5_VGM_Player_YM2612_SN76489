@@ -504,9 +504,10 @@ void setup()
   SD.vwd()->rewind();
 
   //Prepare UART Bluetooth module
-  //pinMode(BT_RX, INPUT);
-  //pinMode(BT_TX, OUTPUT);
-  //Serial2.begin(9600); //Hardware UART port 2
+  //BT_RX wasnt working?
+  pinMode(10, INPUT);
+  pinMode(9, OUTPUT);
+  Serial2.begin(9600); //Hardware UART port 2
 
   u8g2.begin();
   u8g2.firstPage();
