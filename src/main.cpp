@@ -505,8 +505,8 @@ void setup()
 
   //Prepare UART Bluetooth module
   //BT_RX wasnt working?
-  pinMode(10, INPUT);
-  pinMode(9, OUTPUT);
+  pinMode(BT_TX, INPUT);
+  pinMode(BT_RX, OUTPUT);
   Serial2.begin(9600); //Hardware UART port 2
 
   u8g2.begin();
@@ -529,7 +529,8 @@ void loop()
   while(Serial.available() || Serial2.available())
   {
     bool USBorBluetooh = Serial.available();
-    char serialCmd = USBorBluetooh ? Serial.read() : Serial2.read();
+    //char serialCmd = USBorBluetooh ? Serial.read() : Serial2.read();
+    char serialCmd = Serial2.read();
     switch(serialCmd)
     {
       case '+': //Next song

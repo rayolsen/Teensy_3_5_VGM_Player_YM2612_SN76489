@@ -27,7 +27,9 @@ byte SN_DATA[8] = {24, 25, 26, 27, 28, 29, 30, 31};
 #define PSE_BTN 20
 
 //UART Bluetooth module
-//Serial2
-#define BT_RX 10
-#define BT_TX 9
-#define PIN_D13 13 //LED
+//Serial2 defined by Teensy spec
+#define BT_RX 9
+#define BT_TX 10
+
+//Debug LED
+//#define PIN_D13 13
