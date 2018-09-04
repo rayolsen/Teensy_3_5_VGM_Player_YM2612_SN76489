@@ -236,11 +236,11 @@ void GetHeaderData() //Scrape off the important VGM data from the header, then d
     GD3Position++;
   }
   GD3Position++;
-  Serial.println(trackTitle);
-  Serial.println(gameName);
-  Serial.println(systemName);
-  Serial.println(gameDate);
-  Serial.println("");
+  Serial2.println(trackTitle);
+  Serial2.println(gameName);
+  Serial2.println(systemName);
+  Serial2.println(gameDate);
+  Serial2.println("");
   vgm.seek(bufferReturnPosition); //Send the file seek back to the original buffer position so we don't confuse our program.
   waitSamples = Read32(); //0x18->0x1B : Get wait Samples count
   loopOffset = Read32();  //0x1C->0x1F : Get loop offset Postition
@@ -266,7 +266,7 @@ void RemoveSVI() //Sometimes, Windows likes to place invisible files in our SD c
   if(n == "System Volume Information")
   {
       if(!nextFile.rmRfStar())
-        Serial.println("Failed to remove SVI file");
+        Serial2.println("Failed to remove SVI file");
   }
   SD.vwd()->rewind();
   nextFile.close();
@@ -386,7 +386,7 @@ void StartupSequence(StartUpProfile sup, String request = "")
     {
       SD.vwd()->rewind();
       bool fileFound = false;
-      Serial.print("REQUEST: ");Serial.println(request);
+      Serial2.print("REQUEST: ");Serial2.println(request);
       for(int i = 0; i<numberOfFiles; i++)
       {
         nextFile.close();
@@ -404,11 +404,11 @@ void StartupSequence(StartUpProfile sup, String request = "")
       nextFile.close();
       if(fileFound)
       {
-        Serial.println("File found!");
+        Serial2.println("File found!");
       }
       else
       {
-        Serial.println("ERROR: File not found! Continuing with current song.");
+        Serial2.println("ERROR: File not found! Continuing with current song.");
         return;
       }
     }
@@ -423,14 +423,14 @@ void StartupSequence(StartUpProfile sup, String request = "")
   loopCount = 0;
   cmd = 0;
   ClearBuffers();
-  Serial.print("Current file number: "); Serial.print(currentFileNumber+1); Serial.print("/"); Serial.println(numberOfFiles);
+  Serial2.print("Current file number: "); Serial2.print(currentFileNumber+1); Serial2.print("/"); Serial2.println(numberOfFiles);
   if(vgm.isOpen())
     vgm.close();
   vgm = SD.open(fileName, FILE_READ);
   if(!vgm)
-    Serial.println("File open failed!");
+    Serial2.println("File open failed!");
   else
-    Serial.println("Opened successfully...");
+    Serial2.println("/nOpened successfully...");
   FillBuffer();
   GetHeaderData();
   singleSampleWait = ((1000.0 / (sampleRate/(float)1))*1000);
@@ -486,11 +486,14 @@ void setup()
   pinMode(YM_RD, OUTPUT);
   pinMode(YM_A0, OUTPUT);
   pinMode(YM_A1, OUTPUT);
-  Serial.begin(115200);
+  //Serial.begin(115200);
+  //pinMode(BT_TX, INPUT);
+  //pinMode(BT_RX, OUTPUT);
+  Serial2.begin(9600);
   SilenceAllChannels();
   if(!SD.begin())
   {
-      Serial.println("Card Mount Failed");
+      Serial2.println("Card Mount Failed");
       return;
   }
   RemoveSVI();
@@ -502,12 +505,8 @@ void setup()
   }
   countFile.close();
   SD.vwd()->rewind();
-
   //Prepare UART Bluetooth module
-  //BT_RX wasnt working?
-  pinMode(BT_TX, INPUT);
-  pinMode(BT_RX, OUTPUT);
-  Serial2.begin(9600); //Hardware UART port 2
+  //Serial2.begin(9600); //Hardware UART port 2
 
   u8g2.begin();
   u8g2.firstPage();
@@ -526,9 +525,10 @@ void setup()
 void loop()
 {
   //digitalWrite(PIN_D13, LOW);
-  while(Serial.available() || Serial2.available())
+  //while(Serial.available() || Serial2.available())
+  while(Serial2.available())
   {
-    bool USBorBluetooh = Serial.available();
+    //bool USBorBluetooh = Serial2.available();
     //char serialCmd = USBorBluetooh ? Serial.read() : Serial2.read();
     char serialCmd = Serial2.read();
     switch(serialCmd)
@@ -544,12 +544,12 @@ void loop()
       break;
       case '/': //Toggle shuffle mode
         playMode == SHUFFLE ? playMode = IN_ORDER : playMode = SHUFFLE;
-        playMode == SHUFFLE ? Serial.println("SHUFFLE ON") : Serial.println("SHUFFLE OFF");
+        playMode == SHUFFLE ? Serial2.println("SHUFFLE ON") : Serial2.println("SHUFFLE OFF");
         DrawOledPage();
       break;
       case '.': //Toggle loop mode
         playMode == LOOP ? playMode = IN_ORDER : playMode = LOOP;
-        playMode == LOOP ? Serial.println("LOOP ON") : Serial.println("LOOP OFF");
+        playMode == LOOP ? Serial2.println("LOOP ON") : Serial2.println("LOOP OFF");
         DrawOledPage();
       break;
       case 'p': //Pause/Unpause
@@ -559,16 +559,17 @@ void loop()
           playMode = PAUSED;
           cmdFromBeforePause = GetByte();
           SilenceAllChannels();
-          Serial.println("PAUSE START");
+          Serial2.println("PAUSE START");
         }
         else
         {
           playMode = playModeBeforePause;
-          Serial.println("PAUSE END");
+          Serial2.println("PAUSE END");
         }
       break;
       case 'r': //Song Request, format:  r:mySongFileName.vgm - An attempt will be made to find and open that file.
-        String req = USBorBluetooh ? Serial.readString(1024) : Serial2.readString(1024);
+        //String req = USBorBluetooh ? Serial.readString(1024) : Serial2.readString(1024);
+        String req = Serial2.readString(1024);
         req.remove(0, 1); //Remove colon character
         StartupSequence(REQUEST, req);
       break;
@@ -592,13 +593,13 @@ void loop()
       playMode = PAUSED;
       cmdFromBeforePause = GetByte();
       SilenceAllChannels();
-      Serial.println("PAUSE START");
+      Serial2.println("PAUSE START");
     }
     else
     {
       playMode = playModeBeforePause;
       DidWeJustUnpause = true;
-      Serial.println("PAUSE END");
+      Serial2.println("PAUSE END");
     }
   }
   else
@@ -626,7 +627,7 @@ void loop()
   }
   if (DidWeJustUnpause)
   {
-    Serial.println("ANYTHING");
+    Serial2.println("ANYTHING");
     cmd = cmdFromBeforePause;
     DidWeJustUnpause = false;
   }

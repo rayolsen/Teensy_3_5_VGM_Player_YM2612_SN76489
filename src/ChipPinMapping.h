@@ -30,6 +30,6 @@ byte SN_DATA[8] = {24, 25, 26, 27, 28, 29, 30, 31};
 //Serial2 defined by Teensy spec
 #define BT_RX 9
 #define BT_TX 10
-
+// #define HWSERIAL Serial2
 //Debug LED
 //#define PIN_D13 13

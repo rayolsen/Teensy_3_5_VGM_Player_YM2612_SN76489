@@ -384,12 +384,18 @@ UsedLibrary="C:/EAGLE-7.7.0/lbr/SparkFun-Eagle-Libraries-master/SparkFun-Switche
 UsedLibrary="C:/EAGLE-7.7.0/lbr/SparkFun-Eagle-Libraries-master/User-Submitted.lbr"
 
 [Win_1]
+Type="Control Panel"
+Loc="407 196 1006 595"
+State=2
+Number=0
+
+[Win_2]
 Type="Schematic Editor"
-Loc="1912 -8 3831 1008"
+Loc="1912 176 3511 1012"
 State=1
 Number=1
 File="Teensy_v1.3.sch"
-View="100.332 86.8371 196.848 146.843"
+View="29.8075 4.79535 230.512 129.224"
 WireWidths=" 0 0.3048 0.6096 0.8128 1.016 1.27 1.4224 1.6764 1.778 1.9304 2.1844 2.54 3.81 6.4516 0.4064 0.1524"
 PadDiameters=" 0.254 0.3048 0.4064 0.6096 0.8128 1.016 1.27 1.4224 1.6764 1.778 1.9304 2.1844 2.54 3.81 6.4516 0"
 PadDrills=" 0.5 0.6 0.7 0.9 1 1.1 1.2 1.3 1.4 1.5 1.6 2 2.2 2.8 3.2 0.8"
@@ -428,16 +434,15 @@ ArcDirection=0
 AddLevel=2
 PadsSameType=0
 Layer=91
-Views=" 1: 100.332 86.8371 196.848 146.843 1:AMP 4.21189 -23.1505 188.828 63.7905"
 Sheet="1"
 
-[Win_2]
+[Win_3]
 Type="Board Editor"
 Loc="0 0 1919 1016"
 State=1
 Number=2
 File="Teensy_v1.3.brd"
-View="-35.0783 -11.1643 82.1016 85.297"
+View="8.1933 21.5497 74.9109 75.3601"
 WireWidths=" 0.254 0.3048 1.4224 1.778 1.9304 2.1844 2.54 3.81 6.4516 0.4064 0 1.016 1.6764 1.27 0.6096 0.8128"
 PadDiameters=" 0.254 0.3048 0.4064 0.6096 0.8128 1.016 1.27 1.4224 1.6764 1.778 1.9304 2.1844 2.54 3.81 6.4516 0"
 PadDrills=" 0.5 0.6 0.7 0.9 1 1.1 1.2 1.3 1.4 1.5 1.6 2 2.2 2.8 3.2 0.8"
@@ -477,14 +482,8 @@ AddLevel=2
 PadsSameType=0
 Layer=21
 
-[Win_3]
-Type="Control Panel"
-Loc="407 196 1006 595"
-State=2
-Number=0
-
 [Desktop]
-Screen="3840 1080"
+Screen="3520 1884"
 Window="Win_1"
 Window="Win_2"
 Window="Win_3"
